@@ -1,0 +1,7 @@
+{
+  "id": "vinyl-catalog-tools",
+  "name": "Vinyl Catalog Tools",
+  "author": "arthem",
+  "description": "Manage your vinyl collection in Obsidian: table/cards view, Discogs CSV import, and export.",
+  "repo": "REPO_OWNER/REPO_NAME"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "vinyl-catalog-tools",
+  "name": "Vinyl Catalog Tools",
+  "version": "0.4.0",
+  "minAppVersion": "1.5.0",
+  "description": "Add vinyl records, import Discogs CSV, browse table/cards, and export.",
+  "author": "arthem",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}

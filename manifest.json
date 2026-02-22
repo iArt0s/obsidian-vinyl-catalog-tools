@@ -1,0 +1,10 @@
+{
+  "id": "vinyl-catalog-tools",
+  "name": "Vinyl Catalog Tools",
+  "version": "0.5.11",
+  "minAppVersion": "1.5.0",
+  "description": "Manage your vinyl collection in Obsidian: table/cards view, Discogs CSV import, and export.",
+  "author": "arthem",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
