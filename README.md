@@ -28,8 +28,6 @@ Manage your vinyl collection in Obsidian: add records, browse in table/cards vie
 
 ![Vinyl Catalog Tools screenshot](assets/screenshot-vinyl-catalog-tools.png)
 
-> Put your real screenshot in `assets/screenshot-vinyl-catalog-tools.png`.
-
 ## Default Paths
 
 - Collection folder: `Vinyl`
