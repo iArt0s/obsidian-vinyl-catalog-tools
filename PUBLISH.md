@@ -20,12 +20,12 @@ Do not include local runtime config in release assets:
 ## 2. Current Release Metadata
 
 - Plugin id: `vinyl-catalog-tools`
-- Current version: `0.5.11`
+- Current version: `0.5.12`
 - Min app version: `1.5.0`
 
 ## 3. Release Assets
 
-Attach these files to GitHub Release tag `0.5.11`:
+Attach these files to GitHub Release tag `0.5.12`:
 
 - `main.js`
 - `manifest.json`
@@ -34,16 +34,16 @@ Attach these files to GitHub Release tag `0.5.11`:
 
 Prepared bundle (local):
 
-- `release/0.5.11/vinyl-catalog-tools-0.5.11.zip`
+- `release/0.5.12/vinyl-catalog-tools-0.5.12.zip`
 
 SHA256:
 
-- `21a4d82008fb8394dba6613296be8177faf0c8f4b4957ba0bee27ccf3989a6f2`
+- `37bdb6c75c92ca82073e5241579e3785967eba5c253189434c03d366b689fc72`
 
 ## 4. GitHub Release Steps
 
 1. Push all source changes to your default branch.
-2. Create tag `0.5.11`.
+2. Create tag `0.5.12`.
 3. Create GitHub Release from this tag.
 4. Upload release assets listed above.
 5. Publish release.
@@ -65,7 +65,7 @@ Use this JSON entry (replace `REPO_OWNER/REPO_NAME`):
   "id": "vinyl-catalog-tools",
   "name": "Vinyl Catalog Tools",
   "author": "arthem",
-  "description": "Manage your vinyl collection in Obsidian: table/cards view, Discogs CSV import, and export.",
+  "description": "Manage your vinyl collection: table/cards view, Discogs CSV import, and export.",
   "repo": "REPO_OWNER/REPO_NAME"
 }
 ```
@@ -85,7 +85,7 @@ Adds `vinyl-catalog-tools` to Community Plugins.
 - name: Vinyl Catalog Tools
 - author: arthem
 - repo: https://github.com/REPO_OWNER/REPO_NAME
-- latest release: 0.5.11
+- latest release: 0.5.12
 
 ## Notes
 - Release assets include main.js, manifest.json, styles.css, versions.json.
@@ -95,7 +95,7 @@ Adds `vinyl-catalog-tools` to Community Plugins.
 
 Before opening PR, verify:
 
-1. `manifest.json` version equals release tag (`0.5.11`).
-2. `versions.json` contains `"0.5.11": "1.5.0"`.
+1. `manifest.json` version equals release tag (`0.5.12`).
+2. `versions.json` contains `"0.5.12": "1.5.0"`.
 3. GitHub release contains required assets.
 4. Release is public.

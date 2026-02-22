@@ -65,7 +65,7 @@ Replace placeholders with your real PayPal link and wallet address before releas
 ## Publish Checklist
 
 1. Keep `manifest.json`, `main.js`, `styles.css`, `versions.json` in release assets.
-2. Tag release as `0.5.11`.
+2. Tag release as `0.5.12`.
 3. Submit plugin to Obsidian community list repository.
 4. Do not include local `data.json` in release assets.
 5. Use `PUBLISH.md` for ready PR text and release checklist.
