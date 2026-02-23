@@ -57,15 +57,3 @@ If this plugin saves you time and you want to support development:
 
 [![Donate with PayPal](https://img.shields.io/badge/PayPal-Donate-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/iArt0s)
 [![USDT TRC20](https://img.shields.io/badge/USDT-TRC20-26A17B?style=for-the-badge&logo=tether&logoColor=white)](https://tronscan.org/#/address/TW4a7UHkfwQ29Ue55Be3GxtSxnG3XdkWXa)
-
-USDT wallet: `TW4a7UHkfwQ29Ue55Be3GxtSxnG3XdkWXa`
-
-Replace placeholders with your real PayPal link and wallet address before release.
-
-## Publish Checklist
-
-1. Keep `manifest.json`, `main.js`, `styles.css`, `versions.json` in release assets.
-2. Tag release as `0.5.12`.
-3. Submit plugin to Obsidian community list repository.
-4. Do not include local `data.json` in release assets.
-5. Use `PUBLISH.md` for ready PR text and release checklist.
