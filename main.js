@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
   collectionFolder: 'Vinyl',
   artistsFolder: 'Vinyl/Artists',
   coversFolder: 'Vinyl/covers',
+  discogsToken: '',
   language: 'auto',
 };
 
@@ -33,7 +34,7 @@ const I18N = {
     'view.searchPlaceholder': 'Поиск: артист, название, год',
     'view.modeTable': 'Таблица',
     'view.modeCards': 'Карточки',
-    'view.importDiscogs': 'Импорт Discogs',
+    'view.importDiscogs': 'Import Discogs data',
     'view.export': 'Экспорт',
     'view.exportCards': 'Карточки PNG/JPG',
     'view.summaryTotal': 'Всего: {count}',
@@ -152,6 +153,8 @@ const I18N = {
     'settings.artistsFolderDesc': 'Карточки пишутся в подпапки внутри этой директории',
     'settings.coversFolder': 'Папка обложек',
     'settings.coversFolderDesc': 'Куда сохранять скачанные обложки',
+    'settings.discogsToken': 'Discogs personal access token',
+    'settings.discogsTokenDesc': 'Необязательно. Увеличивает лимит API и снижает пропуски обложек при большом импорте.',
     'settings.init': 'Инициализировать структуру',
     'settings.initDesc': 'Создать папки коллекции, артистов и обложек по путям из настроек',
     'settings.initBtn': 'Создать',
@@ -165,7 +168,7 @@ const I18N = {
     'command.openCollection': 'Vinyl: Открыть коллекцию',
     'command.addRecord': 'Vinyl: Добавить пластинку',
     'command.initFolders': 'Vinyl: Инициализировать папки',
-    'command.importDiscogs': 'Vinyl: Импорт Discogs CSV',
+    'command.importDiscogs': 'Vinyl: Import Discogs data',
     'command.createBase': 'Vinyl: Создать .base файл',
 
     'base.fileName': '🎶 Коллекция винила.base',
@@ -203,6 +206,8 @@ const I18N = {
     'error.backfill': 'ошибка докачки',
     'error.csvEmpty': 'CSV пустой или не удалось прочитать строки',
     'error.csvInvalidRows': 'В CSV не найдено валидных строк с Artist и Title',
+    'error.discogsRequest': 'Discogs API вернул HTTP {status}',
+    'error.discogsImageDownload': 'Discogs image вернул HTTP {status}',
     'error.importItem': 'ошибка импорта',
   },
   en: {
@@ -212,7 +217,7 @@ const I18N = {
     'view.searchPlaceholder': 'Search: artist, title, year',
     'view.modeTable': 'Table',
     'view.modeCards': 'Cards',
-    'view.importDiscogs': 'Import Discogs',
+    'view.importDiscogs': 'Import Discogs data',
     'view.export': 'Export',
     'view.exportCards': 'Cards PNG/JPG',
     'view.summaryTotal': 'Total: {count}',
@@ -331,6 +336,8 @@ const I18N = {
     'settings.artistsFolderDesc': 'Cards are stored in subfolders inside this directory',
     'settings.coversFolder': 'Covers folder',
     'settings.coversFolderDesc': 'Where downloaded covers are saved',
+    'settings.discogsToken': 'Discogs personal access token',
+    'settings.discogsTokenDesc': 'Optional. Increases the API limit and reduces skipped covers during large imports.',
     'settings.init': 'Initialize structure',
     'settings.initDesc': 'Create collection, artists and covers folders using paths from settings',
     'settings.initBtn': 'Create',
@@ -344,7 +351,7 @@ const I18N = {
     'command.openCollection': 'Vinyl: Open collection',
     'command.addRecord': 'Vinyl: Add record',
     'command.initFolders': 'Vinyl: Initialize folders',
-    'command.importDiscogs': 'Vinyl: Import Discogs CSV',
+    'command.importDiscogs': 'Vinyl: Import Discogs data',
     'command.createBase': 'Vinyl: Create .base file',
 
     'base.fileName': '🎶 Коллекция винила.base',
@@ -382,6 +389,8 @@ const I18N = {
     'error.backfill': 'backfill error',
     'error.csvEmpty': 'CSV is empty or rows could not be read',
     'error.csvInvalidRows': 'No valid rows with Artist and Title were found in CSV',
+    'error.discogsRequest': 'Discogs API returned HTTP {status}',
+    'error.discogsImageDownload': 'Discogs image returned HTTP {status}',
     'error.importItem': 'import error',
   },
 };
@@ -450,6 +459,20 @@ function extFromContentType(contentType) {
   return '';
 }
 
+function pickDiscogsReleaseImageUrl(release) {
+  const images = Array.isArray(release?.images) ? release.images : [];
+  const primary = images.find((image) => toText(image?.type).toLowerCase() === 'primary');
+  const image = primary || images[0] || {};
+  return toText(image.uri || image.resource_url || image.uri150 || release?.thumb);
+}
+
+function pickDiscogsSearchReleaseId(searchResults) {
+  const results = Array.isArray(searchResults?.results) ? searchResults.results : [];
+  const withCover = results.find((result) => toText(result.cover_image || result.thumb));
+  const result = withCover || results[0] || {};
+  return toText(result.id);
+}
+
 function splitFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!match) return null;
@@ -500,6 +523,30 @@ function normalizeLookupValue(value) {
 
 function makeArtistTitleLookupKey(artist, title) {
   return `${normalizeLookupValue(artist)}::${normalizeLookupValue(title)}`;
+}
+
+function normalizeCsvHeaderKey(value) {
+  return toText(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function readCsvValue(row, names) {
+  for (const name of names) {
+    const direct = row[name];
+    if (direct != null && toText(direct) !== '') return direct;
+  }
+
+  const wanted = new Set(names.map(normalizeCsvHeaderKey));
+  for (const [key, value] of Object.entries(row)) {
+    if (wanted.has(normalizeCsvHeaderKey(key)) && toText(value) !== '') return value;
+  }
+  return '';
+}
+
+function normalizeDiscogsToken(value) {
+  return toText(value)
+    .replace(/^Discogs\s+token=/i, '')
+    .replace(/^token=/i, '')
+    .trim();
 }
 
 function delay(ms) {
@@ -585,24 +632,31 @@ function parseCsvToObjects(text) {
 }
 
 function mapDiscogsCsvRow(row) {
-  const artist = toText(row.Artist);
-  const title = toText(row.Title);
+  const artist = toText(readCsvValue(row, ['Artist', 'artist']));
+  const title = toText(readCsvValue(row, ['Title', 'title']));
   if (!artist || !title) return null;
 
-  const releaseId = toText(row.release_id);
+  const releaseId = toText(readCsvValue(row, [
+    'release_id',
+    'Release ID',
+    'Release Id',
+    'Discogs ID',
+    'Discogs Release ID',
+    'ID',
+  ]));
   const mapped = {
     artist,
     title,
-    year: toText(row.Released),
+    year: toText(readCsvValue(row, ['Released', 'Year', 'released', 'year'])),
     releaseId,
-    catalogNumber: toText(row['Catalog#']),
-    label: toText(row.Label),
-    format: toText(row.Format),
-    rating: toText(row.Rating),
-    dateAdded: toText(row['Date Added']),
-    mediaCondition: toText(row['Collection Media Condition']),
-    sleeveCondition: toText(row['Collection Sleeve Condition']),
-    notes: toText(row['Collection Notes']),
+    catalogNumber: toText(readCsvValue(row, ['Catalog#', 'Catalog Number', 'Catalog No', 'Catno'])),
+    label: toText(readCsvValue(row, ['Label', 'label'])),
+    format: toText(readCsvValue(row, ['Format', 'format'])),
+    rating: toText(readCsvValue(row, ['Rating', 'rating'])),
+    dateAdded: toText(readCsvValue(row, ['Date Added', 'date_added'])),
+    mediaCondition: toText(readCsvValue(row, ['Collection Media Condition', 'Media Condition', 'media_condition'])),
+    sleeveCondition: toText(readCsvValue(row, ['Collection Sleeve Condition', 'Sleeve Condition', 'sleeve_condition'])),
+    notes: toText(readCsvValue(row, ['Collection Notes', 'Notes', 'comments'])),
   };
 
   return mapped;
@@ -2008,6 +2062,19 @@ class VinylSettingsTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
+      .setName(t('settings.discogsToken'))
+      .setDesc(t('settings.discogsTokenDesc'))
+      .addText((text) => {
+        text.inputEl.type = 'password';
+        text.setPlaceholder('Discogs token=...');
+        text.setValue(this.plugin.settings.discogsToken || '');
+        text.onChange(async (value) => {
+          this.plugin.settings.discogsToken = normalizeDiscogsToken(value);
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
       .setName(t('settings.init'))
       .setDesc(t('settings.initDesc'))
       .addButton((button) => {
@@ -2117,6 +2184,7 @@ class VinylCatalogToolsPlugin extends Plugin {
     if (!['auto', 'ru', 'en'].includes(this.settings.language)) {
       this.settings.language = DEFAULT_SETTINGS.language;
     }
+    this.settings.discogsToken = normalizeDiscogsToken(this.settings.discogsToken);
   }
 
   async saveSettings() {
@@ -2494,9 +2562,39 @@ class VinylCatalogToolsPlugin extends Plugin {
     return true;
   }
 
-  async throttleDiscogsRequest(state, minIntervalMs = 1200) {
+  async ensureDiscogsCoverLinked(file, coverPath, releaseId) {
+    if (!coverPath) return false;
+
+    const fm = await this.readFrontmatter(file);
+    if (hasCoverValue(fm.cover)) return false;
+
+    await this.modifyFrontmatter(file, async (frontmatter) => {
+      if (!hasCoverValue(frontmatter.cover)) {
+        frontmatter.cover = `[[${coverPath}]]`;
+      }
+      if (releaseId && !toText(frontmatter.discogs_release_id || frontmatter.release_id)) {
+        frontmatter.discogs_release_id = releaseId;
+      }
+      return frontmatter;
+    });
+    return true;
+  }
+
+  getDiscogsHeaders(accept = 'application/json') {
+    const headers = {
+      accept,
+      'user-agent': 'VinylCatalogTools/0.5.13 (+https://obsidian.md)',
+    };
+
+    const token = normalizeDiscogsToken(this.settings.discogsToken);
+    if (token) headers.authorization = `Discogs token=${token}`;
+    return headers;
+  }
+
+  async throttleDiscogsRequest(state, minIntervalMs = null) {
+    const interval = minIntervalMs ?? (normalizeDiscogsToken(this.settings.discogsToken) ? 1100 : 2600);
     const now = Date.now();
-    const waitMs = state.lastRequestTs + minIntervalMs - now;
+    const waitMs = state.lastRequestTs + interval - now;
     if (waitMs > 0) await delay(waitMs);
     state.lastRequestTs = Date.now();
   }
@@ -2511,43 +2609,75 @@ class VinylCatalogToolsPlugin extends Plugin {
     const response = await requestUrl({
       url: `https://api.discogs.com/releases/${encodeURIComponent(key)}`,
       method: 'GET',
-      headers: {
-        accept: 'application/json',
-        'user-agent': 'VinylCatalogTools/0.5.0 (+https://obsidian.md)',
-      },
+      headers: this.getDiscogsHeaders('application/json'),
     });
 
     if (response.status >= 400) {
       if (response.status === 429) {
-        const retryAfterSec = Number(response.headers['Retry-After'] || response.headers['retry-after'] || 2);
+        const retryAfterSec = Number(response.headers['Retry-After'] || response.headers['retry-after'] || 60);
         await delay(Math.max(1000, retryAfterSec * 1000));
         await this.throttleDiscogsRequest(state);
         const retry = await requestUrl({
           url: `https://api.discogs.com/releases/${encodeURIComponent(key)}`,
           method: 'GET',
-          headers: {
-            accept: 'application/json',
-            'user-agent': 'VinylCatalogTools/0.5.0 (+https://obsidian.md)',
-          },
+          headers: this.getDiscogsHeaders('application/json'),
         });
         if (retry.status >= 400) {
           state.imageUrlCache.set(key, '');
-          return '';
+          throw new Error(this.t('error.discogsRequest', { status: retry.status }));
         }
         const parsedRetry = JSON.parse(retry.text || '{}');
-        const retryUrl = toText(parsedRetry?.images?.[0]?.uri || parsedRetry?.images?.[0]?.uri150);
+        const retryUrl = pickDiscogsReleaseImageUrl(parsedRetry);
         state.imageUrlCache.set(key, retryUrl);
         return retryUrl;
       }
 
       state.imageUrlCache.set(key, '');
-      return '';
+      if (response.status === 404) return '';
+      throw new Error(this.t('error.discogsRequest', { status: response.status }));
     }
 
     const parsed = JSON.parse(response.text || '{}');
-    const url = toText(parsed?.images?.[0]?.uri || parsed?.images?.[0]?.uri150);
+    const url = pickDiscogsReleaseImageUrl(parsed);
     state.imageUrlCache.set(key, url);
     return url;
+  }
+
+  async findDiscogsReleaseIdByArtistTitle(artist, title, state) {
+    const artistText = toText(artist);
+    const titleText = toText(title);
+    if (!artistText || !titleText) return '';
+
+    const key = makeArtistTitleLookupKey(artistText, titleText);
+    if (state.releaseSearchCache.has(key)) return state.releaseSearchCache.get(key) || '';
+
+    await this.throttleDiscogsRequest(state);
+
+    const params = new URLSearchParams({
+      type: 'release',
+      artist: artistText,
+      release_title: titleText,
+      per_page: '5',
+    });
+
+    const response = await requestUrl({
+      url: `https://api.discogs.com/database/search?${params.toString()}`,
+      method: 'GET',
+      headers: this.getDiscogsHeaders('application/json'),
+    });
+
+    if (response.status >= 400) {
+      if (response.status === 404) {
+        state.releaseSearchCache.set(key, '');
+        return '';
+      }
+      throw new Error(this.t('error.discogsRequest', { status: response.status }));
+    }
+
+    const parsed = JSON.parse(response.text || '{}');
+    const releaseId = pickDiscogsSearchReleaseId(parsed);
+    state.releaseSearchCache.set(key, releaseId);
+    return releaseId;
   }
 
   async downloadCoverByUrl(url, preferredStem) {
@@ -2564,13 +2694,12 @@ class VinylCatalogToolsPlugin extends Plugin {
     const response = await requestUrl({
       url: coverUrl,
       method: 'GET',
-      headers: {
-        accept: 'image/*,*/*',
-        'user-agent': 'VinylCatalogTools/0.5.0 (+https://obsidian.md)',
-      },
+      headers: this.getDiscogsHeaders('image/*,*/*'),
     });
 
-    if (response.status >= 400) return '';
+    if (response.status >= 400) {
+      throw new Error(this.t('error.discogsImageDownload', { status: response.status }));
+    }
 
     const byContentType = extFromContentType(response.headers['content-type'] || response.headers['Content-Type']);
     if (byContentType) {
@@ -2589,20 +2718,26 @@ class VinylCatalogToolsPlugin extends Plugin {
   }
 
   async fetchAndAttachDiscogsCover(file, record, state) {
-    if (!record.releaseId) return false;
-
     const fm = await this.readFrontmatter(file);
     if (hasCoverValue(fm.cover)) return false;
 
-    const imageUrl = await this.fetchDiscogsReleaseImageUrl(record.releaseId, state);
+    let releaseId = toText(record.releaseId);
+    if (!releaseId) {
+      const artist = toText(record.artist || fm.artist);
+      const title = toText(record.title || fm.title || file.basename);
+      releaseId = await this.findDiscogsReleaseIdByArtistTitle(artist, title, state);
+    }
+    if (!releaseId) return false;
+
+    const imageUrl = await this.fetchDiscogsReleaseImageUrl(releaseId, state);
     if (!imageUrl) return false;
 
-    const safeReleaseId = sanitizeName(record.releaseId) || slugify(record.releaseId);
+    const safeReleaseId = sanitizeName(releaseId) || slugify(releaseId);
     const stem = `discogs-${safeReleaseId}`;
     const coverPath = await this.downloadCoverByUrl(imageUrl, stem);
     if (!coverPath) return false;
 
-    return this.ensureCoverLinked(file, coverPath);
+    return this.ensureDiscogsCoverLinked(file, coverPath, releaseId);
   }
 
   applyDiscogsFields(frontmatter, record) {
@@ -2719,6 +2854,7 @@ class VinylCatalogToolsPlugin extends Plugin {
     const state = {
       lastRequestTs: 0,
       imageUrlCache: new Map(),
+      releaseSearchCache: new Map(),
     };
 
     let progress = 0;
@@ -2729,14 +2865,16 @@ class VinylCatalogToolsPlugin extends Plugin {
       try {
         const fm = await this.readFrontmatter(file);
         const releaseId = toText(fm.discogs_release_id || fm.release_id);
+        const artist = toText(fm.artist);
+        const title = toText(fm.title) || file.basename;
 
-        if (!releaseId || hasCoverValue(fm.cover)) {
+        if (hasCoverValue(fm.cover) || (!releaseId && (!artist || !title))) {
           summary.skipped += 1;
           continue;
         }
 
         summary.candidates += 1;
-        const attached = await this.fetchAndAttachDiscogsCover(file, { releaseId }, state);
+        const attached = await this.fetchAndAttachDiscogsCover(file, { releaseId, artist, title }, state);
         if (attached) summary.attached += 1;
         else summary.skipped += 1;
       } catch (error) {
@@ -2775,6 +2913,7 @@ class VinylCatalogToolsPlugin extends Plugin {
     const discogsState = {
       lastRequestTs: 0,
       imageUrlCache: new Map(),
+      releaseSearchCache: new Map(),
     };
 
     let progress = 0;

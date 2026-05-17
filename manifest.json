@@ -1,7 +1,7 @@
 {
   "id": "vinyl-catalog-tools",
   "name": "Vinyl Catalog Tools",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "minAppVersion": "1.5.0",
   "description": "Manage your vinyl collection: table/cards view, Discogs CSV import, and export.",
   "author": "arthem",

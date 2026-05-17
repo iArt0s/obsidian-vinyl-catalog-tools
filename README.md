@@ -22,7 +22,7 @@ Manage your vinyl collection in Obsidian: add records, browse in table/cards vie
 - `Vinyl: Open collection`
 - `Vinyl: Initialize folders`
 - `Vinyl: Create .base file`
-- `Vinyl: Import Discogs CSV`
+- `Vinyl: Import Discogs data`
 
 ## Screenshot
 
@@ -42,7 +42,7 @@ All paths are configurable in plugin settings.
 1. Enable Community Plugins in your vault.
 2. Enable `Vinyl Catalog Tools`.
 3. Run `Vinyl: Initialize folders`.
-4. (Optional) Run `Vinyl: Import Discogs CSV`.
+4. (Optional) Run `Vinyl: Import Discogs data`.
 5. Run `Vinyl: Open collection`.
 
 ## Notes
