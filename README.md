@@ -56,4 +56,3 @@ All paths are configurable in plugin settings.
 If this plugin saves you time and you want to support development:
 
 [![Donate with PayPal](https://img.shields.io/badge/PayPal-Donate-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/iArt0s)
-[![USDT TRC20](https://img.shields.io/badge/USDT-TRC20-26A17B?style=for-the-badge&logo=tether&logoColor=white)](https://tronscan.org/#/address/TW4a7UHkfwQ29Ue55Be3GxtSxnG3XdkWXa)
